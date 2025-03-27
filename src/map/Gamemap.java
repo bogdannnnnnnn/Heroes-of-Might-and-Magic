@@ -1,0 +1,182 @@
+package map;
+
+import java.util.Random;
+
+public class Gamemap {
+    private char[][] map;
+    private char[][] originalMap;
+    private char[][] buildingLayer;
+    private static final int OBSTACLE_COUNT = 5;
+
+    public Gamemap(int rows, int cols) {
+        map = new char[rows][cols];
+        originalMap = new char[rows][cols];
+        buildingLayer = new char[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                buildingLayer[i][j] = ' ';
+            }
+        }
+        initializeMap();
+        placeObstacles();
+    }
+
+    private void initializeMap() {
+        int rows = map.length;
+        int cols = map[0].length;
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                char terrain;
+                if (i < rows / 3) {
+                    terrain = '&';
+                } else if (i >= 2 * rows / 3) {
+                    terrain = '?';
+                } else {
+                    terrain = '.';
+                }
+                map[i][j] = terrain;
+                originalMap[i][j] = terrain;
+            }
+        }
+        int roadWidth = (cols >= 6) ? 2 : 1;
+        int mid = cols / 2;
+        int startRoad = mid - roadWidth / 2;
+        for (int i = 0; i < rows; i++) {
+            for (int j = startRoad; j < startRoad + roadWidth; j++) {
+                map[i][j] = '+';
+                originalMap[i][j] = '+';
+            }
+        }
+        int playerCastleRow = 0;
+        int playerCastleCol = mid;
+        map[playerCastleRow][playerCastleCol] = 'И';
+        originalMap[playerCastleRow][playerCastleCol] = 'И';
+        int enemyCastleRow = rows - 1;
+        int enemyCastleCol = mid;
+        map[enemyCastleRow][enemyCastleCol] = 'К';
+        originalMap[enemyCastleRow][enemyCastleCol] = 'К';
+    }
+
+    private void placeObstacles() {
+        Random rand = new Random();
+        int rows = map.length;
+        int cols = map[0].length;
+        int placed = 0;
+        while (placed < OBSTACLE_COUNT) {
+            int x = rand.nextInt(rows);
+            int y = rand.nextInt(cols);
+            if (originalMap[x][y] == '.' && map[x][y] == '.') {
+                map[x][y] = '#';
+                originalMap[x][y] = '#';
+                placed++;
+            }
+        }
+    }
+
+    public void placeGoldPiles(int count) {
+        Random rand = new Random();
+        int rows = map.length;
+        int cols = map[0].length;
+        int placed = 0;
+        while (placed < count) {
+            int x = rand.nextInt(rows);
+            int y = rand.nextInt(cols);
+            if (originalMap[x][y] == '.' && map[x][y] == '.') {
+                map[x][y] = '$';
+                placed++;
+            }
+        }
+    }
+
+    public boolean placeNeutralCastle(int x, int y) {
+        if (x < 0 || x >= map.length || y < 0 || y >= map[0].length) {
+            return false;
+        }
+        map[x][y] = 'N';
+        originalMap[x][y] = 'N';
+        return true;
+    }
+
+    public boolean placeBuilding(int x, int y, char buildingIcon) {
+        int rows = map.length;
+        int cols = map[0].length;
+        if (x < 0 || x >= rows || y < 0 || y >= cols) return false;
+        char cell = map[x][y];
+        if ((cell == '.' || cell == '&' || cell == '?') && buildingLayer[x][y] == ' ') {
+            buildingLayer[x][y] = buildingIcon;
+            map[x][y] = buildingIcon;
+            return true;
+        }
+        return false;
+    }
+
+    public char getCell(int x, int y) {
+        return map[x][y];
+    }
+
+    public void removeGoldAt(int x, int y) {
+        if (buildingLayer[x][y] != ' ') {
+            map[x][y] = buildingLayer[x][y];
+        } else {
+            map[x][y] = originalMap[x][y];
+        }
+    }
+
+    public boolean canMoveToForHero(int x, int y, char heroIcon) {
+        int rows = map.length;
+        int cols = map[0].length;
+        if (x < 0 || x >= rows || y < 0 || y >= cols) return false;
+        char cell = map[x][y];
+        return cell != '#';
+    }
+
+    public int getMovementCost(int x, int y, char moverIcon) {
+        char cell = getCell(x, y);
+        switch (cell) {
+            case '+': return 2;
+            case 'И':
+            case 'К': return 1;
+            case '&':
+                if (moverIcon == 'H') return 2;
+                else if (moverIcon == 'E') return 4;
+                else return 3;
+            case '?':
+                if (moverIcon == 'H') return 4;
+                else if (moverIcon == 'E') return 2;
+                else return 3;
+            case '.': return 3;
+            case '$': return 3;
+            case 'N': return 3;
+            default: return Integer.MAX_VALUE;
+        }
+    }
+
+    public int getMovementCost(int x, int y) {
+        return getMovementCost(x, y, 'H');
+    }
+
+    public void updatePosition(int oldX, int oldY, int newX, int newY, char entityChar) {
+        if (buildingLayer[oldX][oldY] != ' ') {
+            map[oldX][oldY] = buildingLayer[oldX][oldY];
+        } else {
+            map[oldX][oldY] = originalMap[oldX][oldY];
+        }
+        map[newX][newY] = entityChar;
+    }
+
+    public int getRows() {
+        return map.length;
+    }
+
+    public int getCols() {
+        return map[0].length;
+    }
+
+    public void removeEntityAt(int x, int y) {
+        if (buildingLayer[x][y] != ' ') {
+            map[x][y] = buildingLayer[x][y];
+        } else {
+            map[x][y] = originalMap[x][y];
+        }
+    }
+}
