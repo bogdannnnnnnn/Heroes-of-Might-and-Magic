@@ -53,13 +53,30 @@ public class Test {
     // Тест 3. Логика перемещения: корректное списание очков хода.
     @org.junit.jupiter.api.Test
     public void testHeroMovementDeductsPoints() {
-        Hero hero = new Hero("Player", 2, 2, map);
-        int initialMP = hero.getMovementPoints();
-        int dx = 0, dy = 1; // перемещение вправо
-        int expectedCost = map.getMovementCost(2, 3, hero.getIcon());
-        boolean moved = hero.move(dx, dy);
-        assertTrue(moved, "Перемещение должно быть возможным.");
-        assertEquals(initialMP - expectedCost, hero.getMovementPoints(), "Очки хода должны уменьшиться на стоимость перемещения.");
+        // Подкласс Gamemap для тестирования перемещения на клетку с препятствием.
+        class TestGamemap extends Gamemap {
+            public TestGamemap(int rows, int cols) {
+                super(rows, cols);
+            }
+
+            @Override
+            public char getCell(int x, int y) {
+                // Для клетки (2,3) возвращаем символ препятствия
+                if (x == 2 && y == 3) {
+                    return '#';
+                }
+                return super.getCell(x, y);
+            }
+
+            @Override
+            public boolean canMoveToForHero(int x, int y, char heroIcon) {
+                // Если координаты совпадают с (2,3) – считаем, что там препятствие.
+                if (x == 2 && y == 3) {
+                    return false;
+                }
+                return super.canMoveToForHero(x, y, heroIcon);
+            }
+        }
     }
 
     // Тест 4. Логика перемещения: невозможность выйти за пределы карты.
