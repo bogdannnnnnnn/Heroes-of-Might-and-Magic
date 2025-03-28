@@ -278,7 +278,7 @@ public class Test {
     public void testGetMovementCost() {
         // Создаём класс с фиксированным символом клетки для тестирования
         class FixedMap extends Gamemap {
-            private char fixed;
+            private final char fixed;
             public FixedMap(char fixed, int rows, int cols) {
                 super(rows, cols);
                 this.fixed = fixed;
