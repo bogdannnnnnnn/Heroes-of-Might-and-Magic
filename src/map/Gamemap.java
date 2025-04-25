@@ -72,6 +72,15 @@ public class Gamemap {
             }
         }
     }
+    public void addObstacle(int x, int y) {
+        if (originalMap[x][y] == '.' && map[x][y] == '.') {
+            map[x][y] = '#';
+            originalMap[x][y] = '#';
+
+        }
+
+    }
+
 
     public void placeGoldPiles(int count) {
         Random rand = new Random();

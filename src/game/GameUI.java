@@ -13,7 +13,7 @@ public class GameUI {
     }
 
     private void printSeparator(String title) {
-        System.out.println("\n--- " + title + " ---");
+        System.out.println(title);
     }
 
     public void printNewRound() {
