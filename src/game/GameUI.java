@@ -54,8 +54,25 @@ public class GameUI {
 
     public void printCommandOptions() {
         System.out.println("Введите команду:");
-        System.out.println("Для перемещения: введите направление (w, s, a, d или их комбинацию для диагонали, напр. wa, sd)");
-        System.out.println("b - действия в замке, h - найм юнитов, e - завершить ход, q - выход");
+        System.out.println("Для перемещения: w, s, a, d или их комбинация (wa, sd и т.д.)");
+        System.out.println("b - действия в замке, h - найм юнитов, ~ - сохранить, e - завершить ход, q - выход");
+    }
+
+    public void printSaveSuccess() {
+        System.out.println("Игра успешно сохранена.");
+    }
+
+    public void printSaveError(String err) {
+        System.out.println("Ошибка сохранения: " + err);
+    }
+
+    public void printAutoSaveError(String err) {
+        System.out.println("Ошибка автосохранения: " + err);
+    }
+
+    public void printVictoryAndRecordSaved() {
+        System.out.println("Вы завоевали вражеский замок! Победа!");
+        System.out.println("Ваш результат сохранён в таблице рекордов.");
     }
 
     public void printExitGame() {
@@ -241,11 +258,4 @@ public class GameUI {
         System.out.println("Нанят " + unitName + ". Ваше золото теперь: " + remainingGold);
     }
 
-    public String getInput() {
-        return scanner.nextLine().trim();
-    }
-
-    public String getInputLower() {
-        return scanner.nextLine().trim().toLowerCase();
-    }
 }

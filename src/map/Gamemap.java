@@ -1,6 +1,8 @@
 package map;
 
-import java.util.Random;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class Gamemap {
     private char[][] map;
@@ -8,53 +10,86 @@ public class Gamemap {
     private char[][] buildingLayer;
     private static final int OBSTACLE_COUNT = 5;
 
+    // Существующий конструктор
     public Gamemap(int rows, int cols) {
         map = new char[rows][cols];
         originalMap = new char[rows][cols];
         buildingLayer = new char[rows][cols];
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
                 buildingLayer[i][j] = ' ';
-            }
-        }
         initializeMap();
         placeObstacles();
     }
 
+    // Новый конструктор: загрузка карты из CSV-файла
+    public Gamemap(String filePath) throws IOException {
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                lines.add(line);
+            }
+        }
+        if (lines.isEmpty()) throw new IOException("Пустой файл карты: " + filePath);
+        String[] dims = lines.get(0).split(";");
+        int cols = Integer.parseInt(dims[0]);
+        int rows = Integer.parseInt(dims[1]);
+        map = new char[rows][cols];
+        originalMap = new char[rows][cols];
+        buildingLayer = new char[rows][cols];
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                buildingLayer[i][j] = ' ';
+        for (int y = 0; y < rows; y++) {
+            String[] tokens = lines.get(y + 1).split(";");
+            for (int x = 0; x < cols; x++) {
+                map[y][x] = tokens[x].charAt(0);
+                originalMap[y][x] = map[y][x];
+            }
+        }
+    }
+
+    // Метод для сохранения текущей карты в CSV
+    public void saveToFile(String filePath) throws IOException {
+        int rows = map.length;
+        int cols = map[0].length;
+        try (PrintWriter pw = new PrintWriter(
+                new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8))) {
+            pw.println(cols + ";" + rows);
+            for (int y = 0; y < rows; y++) {
+                for (int x = 0; x < cols; x++) {
+                    pw.print(map[y][x]);
+                    if (x < cols - 1) pw.print(";");
+                }
+                pw.println();
+            }
+        }
+    }
+
+    // Остальной существующий код (без изменений)…
+
     private void initializeMap() {
         int rows = map.length;
         int cols = map[0].length;
-        for (int i = 0; i < rows; i++) {
+        for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++) {
                 char terrain;
-                if (i < rows / 3) {
-                    terrain = '&';
-                } else if (i >= 2 * rows / 3) {
-                    terrain = '?';
-                } else {
-                    terrain = '.';
-                }
+                if (i < rows / 3) terrain = '&';
+                else if (i >= 2 * rows / 3) terrain = '?';
+                else terrain = '.';
                 map[i][j] = terrain;
                 originalMap[i][j] = terrain;
             }
-        }
         int roadWidth = (cols >= 6) ? 2 : 1;
         int mid = cols / 2;
         int startRoad = mid - roadWidth / 2;
-        for (int i = 0; i < rows; i++) {
-            for (int j = startRoad; j < startRoad + roadWidth; j++) {
-                map[i][j] = '+';
-                originalMap[i][j] = '+';
-            }
-        }
-        int playerCastleRow = 0;
-        int playerCastleCol = mid;
-        map[playerCastleRow][playerCastleCol] = 'И';
-        originalMap[playerCastleRow][playerCastleCol] = 'И';
-        int enemyCastleRow = rows - 1;
-        int enemyCastleCol = mid;
-        map[enemyCastleRow][enemyCastleCol] = 'К';
-        originalMap[enemyCastleRow][enemyCastleCol] = 'К';
+        for (int i = 0; i < rows; i++)
+            for (int j = startRoad; j < startRoad + roadWidth; j++)
+                map[i][j] = originalMap[i][j] = '+';
+        map[0][mid] = originalMap[0][mid] = 'И';
+        map[rows - 1][mid] = originalMap[rows - 1][mid] = 'К';
     }
 
     private void placeObstacles() {
@@ -66,8 +101,7 @@ public class Gamemap {
             int x = rand.nextInt(rows);
             int y = rand.nextInt(cols);
             if (originalMap[x][y] == '.' && map[x][y] == '.') {
-                map[x][y] = '#';
-                originalMap[x][y] = '#';
+                map[x][y] = originalMap[x][y] = '#';
                 placed++;
             }
         }
@@ -179,6 +213,13 @@ public class Gamemap {
 
     public int getCols() {
         return map[0].length;
+    }
+
+    public void setCell(int x, int y, char cellType) {
+        if (x >= 0 && x < map.length && y >= 0 && y < map[0].length) {
+            map[x][y] = cellType;
+            originalMap[x][y] = cellType;
+        }
     }
 
     public void removeEntityAt(int x, int y) {

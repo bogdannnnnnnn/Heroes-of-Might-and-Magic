@@ -1,7 +1,8 @@
-package buildings;
+package test.java;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import buildings.Tavern;
 import castle.Castle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

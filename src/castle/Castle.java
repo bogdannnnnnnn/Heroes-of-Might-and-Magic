@@ -1,8 +1,8 @@
 package castle;
 
+import buildings.Building;
 import java.util.ArrayList;
 import java.util.List;
-import buildings.Building;
 
 public class Castle {
     protected int x;
@@ -36,6 +36,10 @@ public class Castle {
 
     public void addBuilding(String buildingName) {
         buildings.add(buildingName);
+    }
+
+    public List<String> getBuildingsNames() {
+        return new ArrayList<>(buildings);
     }
 
     public void showBuildings() {

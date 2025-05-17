@@ -16,7 +16,7 @@ public class NeutralCastle extends Castle {
     private static final Logger LOGGER = Logger.getLogger(NeutralCastle.class.getName());
     static {
         try {
-            // Убедимся, что папка logs существует
+            // папка logs существует
             java.nio.file.Path logDir = java.nio.file.Paths.get("src", "logs");
             java.nio.file.Files.createDirectories(logDir);
             String logFile = logDir.resolve("neutral_castle.log").toString();
@@ -30,11 +30,11 @@ public class NeutralCastle extends Castle {
     }
 
 
-    // Список охранных юнитов (на случайном выборе из набора типов)
+    // Список охранных юнитов
     private List<String> guardUnits;
     // Дополнительный бонус к защите
     private int defenseBonus;
-    // Флаг захвата замка (если true, замок становится замком игрока)
+    // Флаг захвата замка
     private boolean captured;
 
     public NeutralCastle(int x, int y) {

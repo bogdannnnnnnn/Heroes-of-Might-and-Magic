@@ -1,6 +1,7 @@
 package battle;
 
 import heroes.Hero;
+import records.PlayerScore;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -34,6 +35,11 @@ public class Battle {
         List<String> playerUnits = new ArrayList<>(player.getUnits());
         List<String> enemyUnits = new ArrayList<>(enemy.getUnits());
         Random rand = new Random();
+        
+        // Отслеживаем убитых юнитов для очков
+        PlayerScore playerScore = player.getPlayerScore();
+        int startLevel = player.getLevel();
+        int startExp = player.getExperience();
 
         System.out.println("Начинается сражение на поле боя!");
         while (!playerUnits.isEmpty() && !enemyUnits.isEmpty()) {
@@ -61,6 +67,15 @@ public class Battle {
                 int index = rand.nextInt(enemyUnits.size());
                 String lostUnit = enemyUnits.remove(index);
                 System.out.println("Враг теряет " + lostUnit + "!");
+                
+                // Добавляем очки за убийство юнита
+                if (playerScore != null) {
+                    playerScore.addUnitKilled(lostUnit);
+                    
+                    // Даем игроку опыт за убийство
+                    int expGained = getUnitPower(lostUnit);
+                    player.gainExperience(expGained);
+                }
             }
 
             // Вывод текущего состояния армий
@@ -69,12 +84,55 @@ public class Battle {
             System.out.println("----------------------------");
         }
 
-        if (playerUnits.isEmpty()) {
-            System.out.println("Сражение окончено! Враг побеждает.");
-            return false;
-        } else {
+        boolean playerWins = !playerUnits.isEmpty();
+        
+        // Если игрок победил, обновляем его очки и добавляем опыт
+        if (playerWins && playerScore != null) {
+            // Даем дополнительный опыт за победу
+            int bonusExp = 50;
+            player.gainExperience(bonusExp);
+            
+            // Рассчитываем силу врага для награды
+            int enemyPower = 0;
+            for (String unit : enemyUnits) {
+                enemyPower += getUnitPower(unit);
+            }
+            
+            // Добавляем доп. золото за победу
+            int goldReward = 100 + (enemyPower / 2);
+            player.addGold(goldReward);
+            
+            // Обновляем очки игрока за собранное золото
+            playerScore.addGoldCollected(goldReward);
+            
+            // Обновляем очки за полученный опыт
+            int totalExpGained = player.getExperience() - startExp;
+            if (player.getLevel() > startLevel) {
+                // Если повысился уровень - добавляем очки за уровни
+                int levelsGained = player.getLevel() - startLevel;
+                playerScore.addLevelsGained(levelsGained);
+                // Корректируем опыт с учетом уровня
+                totalExpGained += startLevel * 100 * levelsGained;
+            }
+            playerScore.addExperienceGained(totalExpGained);
+            
             System.out.println("Сражение окончено! Игрок побеждает.");
-            return true;
+            System.out.println("Получено: " + goldReward + " золота, " + (bonusExp + totalExpGained) + " опыта");
+        } else {
+            System.out.println("Сражение окончено! Враг побеждает.");
         }
+        
+        // Обновляем армии героев
+        player.clearUnits();
+        for (String unit : playerUnits) {
+            player.addUnit(unit);
+        }
+        
+        enemy.clearUnits();
+        for (String unit : enemyUnits) {
+            enemy.addUnit(unit);
+        }
+        
+        return playerWins;
     }
 }
