@@ -1,0 +1,8 @@
+Player;test_player;Map;test_map.csv;Score;100
+Hero;Герой;3;4;1500;2;150
+Units;Мечник;Мечник;Лучник;Кавалерист;
+PlayerCastle;0;5
+Buildings;Таверна;Конюшня;Оружейная;
+Enemy;Злодей;8;7;800
+EnemyUnits;Скелет;Зомби;Демон;
+NeutralCastle;5;6;false 
