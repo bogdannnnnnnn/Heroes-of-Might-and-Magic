@@ -1,9 +1,8 @@
 package game;
 
-import java.util.Scanner;
-import heroes.Hero;
 import castle.Castle;
-import map.Gamemap;
+import heroes.Hero;
+import java.util.Scanner;
 
 public class GameUI {
     private Scanner scanner = new Scanner(System.in);
@@ -258,4 +257,58 @@ public class GameUI {
         System.out.println("Нанят " + unitName + ". Ваше золото теперь: " + remainingGold);
     }
 
+    public void printCommunityCenterInfo(int funds) {
+        System.out.println("\n=== Центр сообщества ===");
+        System.out.println("Текущий баланс: " + funds + " золота");
+    }
+
+    public void printCreatorOptions() {
+        System.out.println("\nВыберите действие:");
+        System.out.println("1. Снять деньги");
+        System.out.println("2. Выйти");
+    }
+
+    public void printDonationOptions() {
+        System.out.println("\nВыберите действие:");
+        System.out.println("1. Сделать пожертвование");
+        System.out.println("2. Выйти");
+    }
+
+    public void printWithdrawAmount() {
+        System.out.print("Введите сумму для снятия: ");
+    }
+
+    public void printDonationAmount() {
+        System.out.print("Введите сумму пожертвования: ");
+    }
+
+    public void printWithdrawSuccess(int amount) {
+        System.out.println("Успешно снято " + amount + " золота");
+    }
+
+    public void printWithdrawFailed() {
+        System.out.println("Не удалось снять деньги. Проверьте сумму и права доступа.");
+    }
+
+    public void printDonationSuccess(int amount) {
+        System.out.println("Успешно пожертвовано " + amount + " золота");
+    }
+
+    public void printInvalidAmount() {
+        System.out.println("Неверная сумма!");
+    }
+
+    public void printNotEnoughGoldForHero() {
+        System.out.println("У вас недостаточно золота для найма нового героя!");
+        System.out.println("Стоимость героя: 500 золота");
+    }
+
+    public void printGameOverNoHero() {
+        System.out.println("===== ИГРА ОКОНЧЕНА =====");
+        System.out.println("Ваш герой погиб, и у вас нет возможности нанять нового героя.");
+        System.out.println("Причины:");
+        System.out.println("- Недостаточно золота (требуется 500 золота)");
+        System.out.println("- ИЛИ отсутствует таверна в замке");
+        System.out.println("Игра завершена. Ваши рекорды сохранены.");
+    }
 }

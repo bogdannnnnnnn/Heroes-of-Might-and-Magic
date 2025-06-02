@@ -78,7 +78,7 @@ import static org.junit.jupiter.api.Assertions.*;
         SaveManager.manualSave(testData2);
         SaveManager.autoSave(testData1);
         
-        // Проверяем, что в списке только ручные сохранения (без autosave)
+        // Проверяем, что в списке только ручные сохранения
         List<File> saves = SaveManager.listSaves();
         assertEquals(2, saves.size());
         
@@ -96,13 +96,15 @@ import static org.junit.jupiter.api.Assertions.*;
             player = new Hero("BBE", 2, 2, map);
         }
 
-        @Test void gainsExperienceAndLevelsUp() {
+        @Test
+        void gainsExperienceAndLevelsUp() {
             int lvl = player.getLevel();
             player.gainExperience(lvl * 100);
             assertEquals(lvl+1, player.getLevel());
         }
 
-        @Test void goldManagement() {
+        @Test
+        void goldManagement() {
             int g0 = player.getGold();
             player.addGold(200);
             assertEquals(g0+200, player.getGold());

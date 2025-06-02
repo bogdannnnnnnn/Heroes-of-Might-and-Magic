@@ -3,6 +3,7 @@ package game;
 import buildings.*;
 import castle.Castle;
 import castle.NeutralCastle;
+import community.CommunityManager;
 import heroes.Hero;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,21 +12,57 @@ import java.util.Scanner;
 import map.GameMapUI;
 import map.Gamemap;
 import records.RecordManager;
-import records.PlayerScore;
 import save.SaveManager;
 
 public class Game {
     public String currentPlayer;
     public String currentMapName;
+    public String communityMapAuthor; // Автор карты из центра сообщества
+    private CommunityManager communityManager; // Для работы с донатами
     private int currentScore = 0;
     private Hero playerHero;
     private Castle playerCastle;
     private Hero enemyHero;
     private NeutralCastle neutralCastle;
+    
+    // Константа стоимости покупки нового героя
+    private static final int HERO_COST = 500;
 
+    /**
+     * Проверяет, можно ли купить нового героя
+     * @param currentHero текущий герой (null если мертв)
+     * @param castle замок игрока
+     * @param goldAmount количество доступного золота
+     * @return true если можно купить героя
+     */
+    private boolean canPurchaseHero(Hero currentHero, Castle castle, int goldAmount) {
+        return currentHero == null && 
+               castle.hasBuilding("Таверна") && 
+               goldAmount >= HERO_COST;
+    }
+    
+    /**
+     * Проверяет, должна ли игра завершиться из-за невозможности продолжения
+     * @param currentHero текущий герой (null если мертв)
+     * @param castle замок игрока  
+     * @param goldAmount количество доступного золота
+     * @return true если игра должна завершиться
+     */
+    private boolean shouldEndGame(Hero currentHero, Castle castle, int goldAmount) {
+        // Если герой жив, игра продолжается
+        if (currentHero != null) {
+            return false;
+        }
+        
+        // Если героя нет, проверяем возможность покупки нового
+        return !canPurchaseHero(currentHero, castle, goldAmount);
+    }
 
     public void start(String mapPath) {
         GameUI ui = new GameUI();
+        // Инициализируем CommunityManager для работы с донатами
+        communityManager = new CommunityManager();
+        
         Gamemap map;
         try {
             map = new Gamemap(mapPath);
@@ -42,25 +79,32 @@ public class Game {
 
         int cols = map.getCols();
         int mid = cols / 2;
-        // Координаты замков
         int playerCastleX = 0;
         int playerCastleY = mid;
         int enemyCastleX = map.getRows() - 1;
         int enemyCastleY = mid;
-        // Координаты нейтрального замка (расположим его в нейтральной зоне)
         int neutralCastleX = 5;
         int neutralCastleY = (mid + 2 < cols) ? mid + 2 : mid - 2;
 
-        // Создаем героя игрока (начало в замке игрока)
+        // Если это карта из центра сообщества, размещаем центр сообщества
+        if (communityMapAuthor != null && mapPath.contains("community_maps")) {
+            int communityCenterX = 3;
+            int communityCenterY = mid;
+            if (map.placeBuilding(communityCenterX, communityCenterY, 'C')) {
+                System.out.println("Центр сообщества размещен на карте автора: " + communityMapAuthor);
+                // Устанавливаем автора карты в объект карты
+                map.setCreatorName(communityMapAuthor);
+            }
+        }
+
+        // Создаем героя игрока
         playerHero = new Hero("Папаня", playerCastleX, playerCastleY, map);
         playerHero.addUnit("Костян");
         playerHero.addUnit("Гуль");
         playerHero.addGold(1000);
 
-        // Создаем замок игрока
         playerCastle = new Castle(playerCastleX, playerCastleY);
 
-        // Создаем врага (начало в замке врага, с иконкой 'E')
         enemyHero = new Hero("Враг", enemyCastleX, enemyCastleY, map);
         enemyHero.addUnit("Арбалетчик");
         enemyHero.addUnit("Мечник");
@@ -69,11 +113,9 @@ public class Game {
         enemyHero.addUnit("Мечник");
         enemyHero.setIcon('E');
 
-        // Создаем нейтральный замок и размещаем его на карте
         neutralCastle = new NeutralCastle(neutralCastleX, neutralCastleY);
         map.placeNeutralCastle(neutralCastleX, neutralCastleY);
 
-        // Для отображения карты используем GameMapUI
         GameMapUI mapUI = new GameMapUI();
 
         Scanner scanner = new Scanner(System.in);
@@ -82,20 +124,41 @@ public class Game {
         while (true) {
             ui.printNewRound();
 
-            // Если героя нет, проверяем возможность найма
             if (playerHero == null) {
                 ui.printNoHero();
+                
+                // Проверяем, можем ли мы купить нового героя
+                // Используем глобальное золото игрока (предполагаем начальное количество)
+                int availableGold = 1000; // Стандартное начальное золото для покупки героя
+                
+                if (shouldEndGame(playerHero, playerCastle, availableGold)) {
+                    ui.printGameOverNoHero();
+                    savePlayerRecord();
+                    System.exit(0);
+                }
+                
                 if (playerCastle.hasBuilding("Таверна")) {
-                    ui.printNewHeroPrompt();
-                    String choice = scanner.nextLine().trim().toLowerCase();
-                    if (choice.equals("m")) {
-                        playerHero = new Hero("Папаня", playerCastle.getX(), playerCastle.getY(), map);
-                        ui.printHeroHired(playerHero.getName());
+                    if (availableGold >= HERO_COST) {
+                        ui.printNewHeroPrompt();
+                        String choice = scanner.nextLine().trim().toLowerCase();
+                        if (choice.equals("m")) {
+                            playerHero = new Hero("Папаня", playerCastle.getX(), playerCastle.getY(), map);
+                            playerHero.setGold(availableGold - HERO_COST);
+                            ui.printHeroHired(playerHero.getName());
+                        } else {
+                            ui.printHeroNotHired();
+                        }
                     } else {
-                        ui.printHeroNotHired();
+                        ui.printNotEnoughGoldForHero();
+                        ui.printGameOverNoHero();
+                        savePlayerRecord();
+                        System.exit(0);
                     }
                 } else {
                     ui.printNoTavernNoHero();
+                    ui.printGameOverNoHero();
+                    savePlayerRecord();
+                    System.exit(0);
                 }
             }
             if (playerHero != null) {
@@ -107,7 +170,6 @@ public class Game {
             if (playerHero != null) {
                 while (playerHero.getMovementPoints() > 0) {
                     mapUI.printMap(map);
-                    // Вывод информации о герое
                     System.out.println(playerHero);
                     ui.printCastleBuildingsHeader();
                     playerCastle.showBuildings();
@@ -116,9 +178,7 @@ public class Game {
                     String input = scanner.nextLine().trim().toLowerCase();
                     if (input.equals("q")) {
                         ui.printExitGame();
-                        // Сохраняем рекорд игрока перед выходом
                         savePlayerRecord();
-                        // Автосохранение
                         try {
                             SaveManager.autoSave(serializeState(playerHero, playerCastle, enemyHero, neutralCastle));
                         } catch (Exception ex) {
@@ -140,8 +200,6 @@ public class Game {
                         break;
                     }
                     if (input.equals("b")) {
-                        // Разрешаем работу меню замка, если игрок находится в своем замке
-                        // или в захваченном нейтральном замке
                         if ((playerHero.getX() == playerCastle.getX() && playerHero.getY() == playerCastle.getY())
                                 || (neutralCastle.isPlayerCastle() && playerHero.getX() == neutralCastle.getX()
                                 && playerHero.getY() == neutralCastle.getY())) {
@@ -198,6 +256,55 @@ public class Game {
                         if (playerHero == null) break;
                         continue;
                     }
+                    
+                    // Если целевая клетка - центр сообщества
+                    if (map.getCell(tentativeX, tentativeY) == 'C') {
+                        if (map.hasCommunityCenter()) {
+                            // Получаем текущие донаты автору из CommunityManager
+                            int authorGold = communityManager.getAuthorGold(map.getCreatorName());
+                            ui.printCommunityCenterInfo(authorGold);
+                            if (currentPlayer.equals(map.getCreatorName())) {
+                                ui.printCreatorOptions();
+                                String choice = scanner.nextLine().trim();
+                                if (choice.equals("1")) {
+                                    ui.printWithdrawAmount();
+                                    try {
+                                        int amount = Integer.parseInt(scanner.nextLine().trim());
+                                        // Снимаем деньги через CommunityManager
+                                        int withdrawnAmount = communityManager.withdrawGold(currentPlayer);
+                                        if (withdrawnAmount > 0) {
+                                            playerHero.addGold(withdrawnAmount);
+                                            ui.printWithdrawSuccess(withdrawnAmount);
+                                        } else {
+                                            ui.printWithdrawFailed();
+                                        }
+                                    } catch (NumberFormatException e) {
+                                        ui.printInvalidAmount();
+                                    }
+                                }
+                            } else {
+                                ui.printDonationOptions();
+                                String choice = scanner.nextLine().trim();
+                                if (choice.equals("1")) {
+                                    ui.printDonationAmount();
+                                    try {
+                                        int amount = Integer.parseInt(scanner.nextLine().trim());
+                                        if (amount > 0 && amount <= playerHero.getGold()) {
+                                            playerHero.addGold(-amount);
+                                            // Добавляем донат автору через CommunityManager
+                                            communityManager.donateToAuthor(map.getCreatorName(), amount);
+                                            ui.printDonationSuccess(amount);
+                                        } else {
+                                            ui.printInvalidAmount();
+                                        }
+                                    } catch (NumberFormatException e) {
+                                        ui.printInvalidAmount();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     // Если целевая клетка – нейтральный замок, инициируем осаду
                     if (tentativeX == neutralCastle.getX() && tentativeY == neutralCastle.getY()) {
                         if (!neutralCastle.isPlayerCastle()) {
@@ -345,26 +452,27 @@ public class Game {
     // Метод для загрузки игры из сохранения
     public void loadFromSave(String saveContent, String mapPath) {
         GameUI ui = new GameUI();
+        // Инициализируем CommunityManager для донатов
+        communityManager = new CommunityManager();
         
         try {
-            // Загружаем карту из файла
             Gamemap map = new Gamemap(mapPath);
-            map.placeGoldPiles(3); // Размещаем золото на карте
+            map.placeGoldPiles(3);
             
-            // Парсинг данных из сохранения
+            // Парсинг данных
             String[] lines = saveContent.split("\n");
             
             // Установка начальных значений
             int cols = map.getCols();
             int mid = cols / 2;
             
-            // Координаты замков по умолчанию
+            // Координаты замков
             int playerCastleX = 0;
             int playerCastleY = mid;
             int enemyCastleX = map.getRows() - 1;
             int enemyCastleY = mid;
             
-            // Координаты нейтрального замка по умолчанию
+            // Координаты нейтрального замка
             int neutralCastleX = 5;
             int neutralCastleY = (mid + 2 < cols) ? mid + 2 : mid - 2;
             
@@ -383,7 +491,7 @@ public class Game {
             }
             
             // Создаем базовые объекты
-            playerHero = null; // будем создавать из данных сохранения
+            playerHero = null;
             playerCastle = new Castle(playerCastleX, playerCastleY);
             
             // Данные врага
@@ -513,6 +621,15 @@ public class Game {
                 map.placeNeutralCastle(neutralCastleX, neutralCastleY);
             }
             
+            // Если это карта из центра сообщества, размещаем центр сообщества
+            if (communityMapAuthor != null && mapPath.contains("community_maps")) {
+                int communityCenterX = 3;
+                int communityCenterY = map.getCols() / 2;
+                if (map.placeBuilding(communityCenterX, communityCenterY, 'C')) {
+                    map.setCreatorName(communityMapAuthor);
+                }
+            }
+            
             // Начинаем игру с восстановленным состоянием
             GameMapUI mapUI = new GameMapUI();
             Scanner scanner = new Scanner(System.in);
@@ -619,6 +736,54 @@ public class Game {
                             playerHero = simulateBattle(playerHero, enemyHero, playerCastle, map, scanner, ui);
                             if (playerHero == null) break;
                             continue;
+                        }
+                        
+                        // Если целевая клетка - центр сообщества
+                        if (map.getCell(tentativeX, tentativeY) == 'C') {
+                            if (map.hasCommunityCenter()) {
+                                // Получаем текущие донаты автору из CommunityManager
+                                int authorGold = communityManager.getAuthorGold(map.getCreatorName());
+                                ui.printCommunityCenterInfo(authorGold);
+                                if (currentPlayer.equals(map.getCreatorName())) {
+                                    ui.printCreatorOptions();
+                                    String choice = scanner.nextLine().trim();
+                                    if (choice.equals("1")) {
+                                        ui.printWithdrawAmount();
+                                        try {
+                                            int amount = Integer.parseInt(scanner.nextLine().trim());
+                                            // Снимаем деньги через CommunityManager
+                                            int withdrawnAmount = communityManager.withdrawGold(currentPlayer);
+                                            if (withdrawnAmount > 0) {
+                                                playerHero.addGold(withdrawnAmount);
+                                                ui.printWithdrawSuccess(withdrawnAmount);
+                                            } else {
+                                                ui.printWithdrawFailed();
+                                            }
+                                        } catch (NumberFormatException e) {
+                                            ui.printInvalidAmount();
+                                        }
+                                    }
+                                } else {
+                                    ui.printDonationOptions();
+                                    String choice = scanner.nextLine().trim();
+                                    if (choice.equals("1")) {
+                                        ui.printDonationAmount();
+                                        try {
+                                            int amount = Integer.parseInt(scanner.nextLine().trim());
+                                            if (amount > 0 && amount <= playerHero.getGold()) {
+                                                playerHero.addGold(-amount);
+                                                // Добавляем донат автору через CommunityManager
+                                                communityManager.donateToAuthor(map.getCreatorName(), amount);
+                                                ui.printDonationSuccess(amount);
+                                            } else {
+                                                ui.printInvalidAmount();
+                                            }
+                                        } catch (NumberFormatException e) {
+                                            ui.printInvalidAmount();
+                                        }
+                                    }
+                                }
+                            }
                         }
                         
                         // Обработка остального хода (нейтральный замок, перемещение и т.д.)
@@ -747,7 +912,7 @@ public class Game {
         }
     }
 
-    // Обновленный метод сериализации состояния для сохранения
+    // Обновленный метод сериализации для сохранения
     private String serializeState(Hero playerHero, Castle playerCastle, Hero enemyHero, NeutralCastle neutralCastle) {
         StringBuilder sb = new StringBuilder();
         

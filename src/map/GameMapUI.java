@@ -14,7 +14,8 @@ public class GameMapUI {
             case '$': return "💰";
             case 'H': return "🧙";
             case 'E': return "👹";
-            case '@': return "⭐"; // Символ курсора
+            case '@': return "⭐";
+            case 'C': return "🏛️";
             default: return String.valueOf(c);
         }
     }

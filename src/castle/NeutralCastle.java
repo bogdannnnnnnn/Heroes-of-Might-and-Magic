@@ -1,54 +1,58 @@
 package castle;
 
+import heroes.Hero;
 import java.util.ArrayList;
 import java.util.List;
-import heroes.Hero;
-import map.Gamemap;
-
-import java.util.logging.Logger;
 import java.util.logging.FileHandler;
-import java.util.logging.SimpleFormatter;
 import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import map.Gamemap;
 
 
 public class NeutralCastle extends Castle {
     // Создаем статический блок логгера
     private static final Logger LOGGER = Logger.getLogger(NeutralCastle.class.getName());
+
     static {
+
+    }
+
+    private List<String> guardUnits;
+    private int defenseBonus;
+    private boolean captured;
+
+    public NeutralCastle(int x, int y) {
+        super(x, y);
+        System.out.println("static2");
+        System.out.println("static1");
         try {
-            // папка logs существует
-            java.nio.file.Path logDir = java.nio.file.Paths.get("src", "logs");
+            java.nio.file.Path logDir = java.nio.file.Paths.get( "logs");
             java.nio.file.Files.createDirectories(logDir);
             String logFile = logDir.resolve("neutral_castle.log").toString();
             FileHandler fh = new FileHandler(logFile, true);
             fh.setFormatter(new SimpleFormatter());
             LOGGER.addHandler(fh);
-            LOGGER.setLevel(Level.INFO);
+            LOGGER.setLevel(Level.ALL);
         } catch (Exception e) {
             System.err.println("Логирование для NeutralCastle не удалось: " + e);
         }
-    }
-
-
-    // Список охранных юнитов
-    private List<String> guardUnits;
-    // Дополнительный бонус к защите
-    private int defenseBonus;
-    // Флаг захвата замка
-    private boolean captured;
-
-    public NeutralCastle(int x, int y) {
-        super(x, y);
         captured = false;
         defenseBonus = 10;
         guardUnits = new ArrayList<>();
-        // Генерируем от 3 до 5 охранных юнитов
-        int count = 3 + (int)(Math.random() * 3); // 3, 4 или 5
+        
+        LOGGER.fine("Создан нейтральный замок в позиции (" + x + ", " + y + ")");
+        
+        // Генерируем юнитов
+        int count = 3 + (int)(Math.random() * 3);
         String[] possibleUnits = {"Копейщик", "Арбалетчик", "Мечник"};
         for (int i = 0; i < count; i++) {
             int idx = (int)(Math.random() * possibleUnits.length);
             guardUnits.add(possibleUnits[idx]);
         }
+        
+        LOGGER.config("Сгенерировано " + count + " охранников для нейтрального замка");
+        
         // В нейтральном замке сразу все здания
         addBuilding("Таверна");
         addBuilding("Сторожевой пост");
@@ -63,9 +67,9 @@ public class NeutralCastle extends Castle {
     public void siegeTurn() {
         if (!guardUnits.isEmpty()) {
             String defeated = guardUnits.remove(0);
-            LOGGER.info("Вы уничтожили охранника нейтрального замка: " + defeated);
+            LOGGER.fine("Вы уничтожили охранника нейтрального замка: " + defeated);
         } else {
-            LOGGER.info("Охрана нейтрального замка полностью уничтожена!");
+            LOGGER.warning("Охрана нейтрального замка полностью уничтожена!");
         }
     }
 
@@ -79,17 +83,11 @@ public class NeutralCastle extends Castle {
         if (!captured && isCaptured()) {
             captured = true;
             hero.forceMoveTo(getX(), getY());
-            // Обновляем ячейку - герой переместился
             gameMap.updatePosition(getX(), getY(), getX(), getY(), hero.getIcon());
-            LOGGER.info("Вы захватили нейтральный замок!");
+            LOGGER.severe("Вы захватили нейтральный замок!");
         }
     }
 
-    // Отображает статус осады замка.
-    public void displayStatus() {
-        System.out.println("Нейтральный замок охраняют " + guardUnits.size() + " юнит(ов).");
-        System.out.println("Дополнительный бонус к защите: " + defenseBonus);
-    }
 
     // Отображает список построенных зданий
     @Override

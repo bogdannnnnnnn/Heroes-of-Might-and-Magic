@@ -60,19 +60,16 @@ public class RecordManager {
             }
             try (PrintWriter pw = new PrintWriter(
                     new OutputStreamWriter(new FileOutputStream(recordFile), StandardCharsets.UTF_8))) {
-                // создаем пустой файл
             }
         }
-        
+        // Обновление рекорда
         List<Record> records = loadPlayerRecords(player);
-        Optional<Record> existing = records.stream()
-                .filter(r -> r.mapName.equals(mapName))
-                .findFirst();
+        Optional<Record> existing = records.stream().filter(r -> r.mapName.equals(mapName)).findFirst();
         
         if (existing.isPresent()) {
             Record rec = existing.get();
             if (score <= rec.score) {
-                return; // нет улучшения
+                return;
             }
             rec.score = score;
         } else {
@@ -80,9 +77,7 @@ public class RecordManager {
         }
         
         // Сортировка и усечение списка до MAX_RECORDS
-        records = records.stream()
-                .sorted(Comparator.comparingInt((Record r) -> r.score).reversed())
-                .limit(MAX_RECORDS)
+        records = records.stream().sorted(Comparator.comparingInt((Record r) -> r.score).reversed()).limit(MAX_RECORDS)
                 .collect(Collectors.toList());
         
         // Запись обратно в файл
@@ -94,7 +89,7 @@ public class RecordManager {
         }
     }
     
-    // Метод обновления записи в общем файле для совместимости с тестами
+    // Метод обновления записи в общем файле (для совместимости с тестом)
     private static void updateLegacyRecords(String player, String mapName, int score) throws IOException {
         List<Record> records = loadLegacyRecords();
         Optional<Record> existing = records.stream()
@@ -127,7 +122,7 @@ public class RecordManager {
         }
     }
 
-    // Загружает все рекорды конкретного игрока
+    // Загружает все рекорды игрока
     public static List<Record> loadPlayerRecords(String player) throws IOException {
         File recordFile = getPlayerRecordFile(player);
         List<Record> records = new ArrayList<>();

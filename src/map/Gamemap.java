@@ -9,6 +9,8 @@ public class Gamemap {
     private char[][] originalMap;
     private char[][] buildingLayer;
     private static final int OBSTACLE_COUNT = 5;
+    private String creatorName;
+    private int communityCenterFunds;
 
     // Существующий конструктор
     public Gamemap(int rows, int cols) {
@@ -20,6 +22,7 @@ public class Gamemap {
                 buildingLayer[i][j] = ' ';
         initializeMap();
         placeObstacles();
+        communityCenterFunds = 0;
     }
 
     // Новый конструктор: загрузка карты из CSV-файла
@@ -33,15 +36,21 @@ public class Gamemap {
             }
         }
         if (lines.isEmpty()) throw new IOException("Пустой файл карты: " + filePath);
-        String[] dims = lines.get(0).split(";");
-        int cols = Integer.parseInt(dims[0]);
-        int rows = Integer.parseInt(dims[1]);
+        
+        // Читаем метаданные (первая строка)
+        String[] metadata = lines.get(0).split(";");
+        int cols = Integer.parseInt(metadata[0]);
+        int rows = Integer.parseInt(metadata[1]);
+        creatorName = metadata.length > 2 ? metadata[2] : "Unknown";
+        communityCenterFunds = metadata.length > 3 ? Integer.parseInt(metadata[3]) : 0;
+        
         map = new char[rows][cols];
         originalMap = new char[rows][cols];
         buildingLayer = new char[rows][cols];
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
                 buildingLayer[i][j] = ' ';
+                
         for (int y = 0; y < rows; y++) {
             String[] tokens = lines.get(y + 1).split(";");
             for (int x = 0; x < cols; x++) {
@@ -57,7 +66,10 @@ public class Gamemap {
         int cols = map[0].length;
         try (PrintWriter pw = new PrintWriter(
                 new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8))) {
-            pw.println(cols + ";" + rows);
+            // Сохраняем метаданные
+            pw.println(cols + ";" + rows + ";" + creatorName + ";" + communityCenterFunds);
+            
+            // Сохраняем карту
             for (int y = 0; y < rows; y++) {
                 for (int x = 0; x < cols; x++) {
                     pw.print(map[y][x]);
@@ -67,8 +79,6 @@ public class Gamemap {
             }
         }
     }
-
-    // Остальной существующий код (без изменений)…
 
     private void initializeMap() {
         int rows = map.length;
@@ -190,6 +200,7 @@ public class Gamemap {
             case '.': return 3;
             case '$': return 3;
             case 'N': return 3;
+            case 'C': return 3;
             default: return Integer.MAX_VALUE;
         }
     }
@@ -228,5 +239,42 @@ public class Gamemap {
         } else {
             map[x][y] = originalMap[x][y];
         }
+    }
+
+    public void setCreatorName(String name) {
+        this.creatorName = name;
+    }
+
+    public String getCreatorName() {
+        return creatorName;
+    }
+
+    public int getCommunityCenterFunds() {
+        return communityCenterFunds;
+    }
+
+    public void addToCommunityCenter(int amount) {
+        if (amount > 0) {
+            communityCenterFunds += amount;
+        }
+    }
+
+    public boolean withdrawFromCommunityCenter(int amount, String playerName) {
+        if (amount > 0 && playerName.equals(creatorName) && amount <= communityCenterFunds) {
+            communityCenterFunds -= amount;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean hasCommunityCenter() {
+        for (int i = 0; i < map.length; i++) {
+            for (int j = 0; j < map[0].length; j++) {
+                if (map[i][j] == 'C') {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
