@@ -13,4 +13,7 @@
 ## Ссылки на репозитории
 - https://github.com/bogdannnnnnnn/top-hw-repo
 - https://github.com/bogdannnnnnnn/Heroes-of-Might-and-Magic/
+
+## Дополнитльная информация о лабах
+Все сдано, но на гит не залита многопточка из-за сломаности проекта 
 >>>>>>> origin/tmp
